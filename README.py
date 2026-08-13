@@ -1,43 +1,21 @@
 import streamlit as st
 
-st.set_page_config(page_title="SI to CGS Unit Converter", page_icon="📏")
+st.title("SI to CGS Unit Converter")
 
-st.title("📏 SI to CGS Unit Converter")
+conversion = {
+    "Length (m → cm)": (100, "cm"),
+    "Mass (kg → g)": (1000, "g"),
+    "Force (N → dyne)": (100000, "dyne"),
+    "Energy (J → erg)": (10000000, "erg"),
+    "Pressure (Pa → Ba)": (10, "Ba"),
+    "Power (W → erg/s)": (10000000, "erg/s"),
+    "Velocity (m/s → cm/s)": (100, "cm/s")
+}
 
-conversion = st.selectbox(
-    "Choose Conversion",
-    [
-        "Length (m → cm)",
-        "Mass (kg → g)",
-        "Force (N → dyne)",
-        "Energy (J → erg)",
-        "Pressure (Pa → Ba)"
-         "Power (watt→ HP)"
-    ]
-)
-
-value = st.number_input("Enter Value", value=0.0)
+choice = st.selectbox("Select Quantity", list(conversion.keys()))
+value = st.number_input("Enter Value", value=1.0)
 
 if st.button("Convert"):
-
-    if conversion == "Length (m → cm)":
-        result = value * 100
-        unit = "cm"
-
-    elif conversion == "Mass (kg → g)":
-        result = value * 1000
-        unit = "g"
-
-    elif conversion == "Force (N → dyne)":
-        result = value * 100000
-        unit = "dyne"
-
-    elif conversion == "Energy (J → erg)":
-        result = value * 10000000
-        unit = "erg"
-
-    elif conversion == "Pressure (Pa → Ba)":
-        result = value * 10
-        unit = "Ba"
-
-    st.success(f"Converted Value: **{result} {unit}**")
+    factor, unit = conversion[choice]
+    result = value * factor
+    st.success(f"{value} = {result} {unit}")
