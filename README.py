@@ -39,23 +39,5 @@ if st.button("Convert"):
     elif conversion == "Pressure (Pa → Ba)":
         result = value * 10
         unit = "Ba"
- 
-
-st.title("Horsepower (hp) to Watt Converter")
-
-hp_type = st.selectbox(
-    "Select Horsepower Type",
-    ["Mechanical hp", "Metric hp"]
-)
-
-hp = st.number_input("Enter Horsepower (hp)", min_value=0.0, value=1.0)
-
-if st.button("Convert"):
-    if hp_type == "Mechanical hp":
-        watt = hp * 745.7
-    else:
-        watt = hp * 735.5
-
-    st.success(f"{hp} {hp_type} = {watt:.2f} W")
 
     st.success(f"Converted Value: **{result} {unit}**")
