@@ -1,53 +1,42 @@
-# Simple SI to CGS Unit Converter
+import streamlit as st
 
-def length():
-    meter = float(input("Enter length in meters (m): "))
-    cm = meter * 100
-    print(f"{meter} m = {cm} cm")
+st.set_page_config(page_title="SI to CGS Unit Converter", page_icon="📏")
 
-def mass():
-    kg = float(input("Enter mass in kilograms (kg): "))
-    gram = kg * 1000
-    print(f"{kg} kg = {gram} g")
+st.title("📏 SI to CGS Unit Converter")
 
-def force():
-    newton = float(input("Enter force in Newton (N): "))
-    dyne = newton * 100000
-    print(f"{newton} N = {dyne} dyne")
+conversion = st.selectbox(
+    "Choose Conversion",
+    [
+        "Length (m → cm)",
+        "Mass (kg → g)",
+        "Force (N → dyne)",
+        "Energy (J → erg)",
+        "Pressure (Pa → Ba)"
+    ]
+)
 
-def energy():
-    joule = float(input("Enter energy in Joules (J): "))
-    erg = joule * 10000000
-    print(f"{joule} J = {erg} erg")
+value = st.number_input("Enter Value", value=0.0)
 
-def pressure():
-    pascal = float(input("Enter pressure in Pascal (Pa): "))
-    barye = pascal * 10
-    print(f"{pascal} Pa = {barye} Ba (barye)")
+if st.button("Convert"):
 
-while True:
-    print("\n===== SI to CGS Unit Converter =====")
-    print("1. Length (m → cm)")
-    print("2. Mass (kg → g)")
-    print("3. Force (N → dyne)")
-    print("4. Energy (J → erg)")
-    print("5. Pressure (Pa → Ba)")
-    print("6. Exit")
+    if conversion == "Length (m → cm)":
+        result = value * 100
+        unit = "cm"
 
-    choice = input("Enter your choice (1-6): ")
+    elif conversion == "Mass (kg → g)":
+        result = value * 1000
+        unit = "g"
 
-    if choice == "1":
-        length()
-    elif choice == "2":
-        mass()
-    elif choice == "3":
-        force()
-    elif choice == "4":
-        energy()
-    elif choice == "5":
-        pressure()
-    elif choice == "6":
-        print("Thank you for using the Unit Converter!")
-        break
-    else:
-        print("Invalid choice! Please try again.")
+    elif conversion == "Force (N → dyne)":
+        result = value * 100000
+        unit = "dyne"
+
+    elif conversion == "Energy (J → erg)":
+        result = value * 10000000
+        unit = "erg"
+
+    elif conversion == "Pressure (Pa → Ba)":
+        result = value * 10
+        unit = "Ba"
+
+    st.success(f"Converted Value: **{result} {unit}**")
