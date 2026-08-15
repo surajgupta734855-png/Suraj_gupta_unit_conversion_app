@@ -1,212 +1,199 @@
-import math
+"""
+utils.py - Custom Styling, Exports (PDF/CSV), and Helper Functions for SU_PHYHBTU
+"""
+
+import io
 import pandas as pd
+from fpdf import FPDF
 import streamlit as st
 
-# Page Configuration
-st.set_page_config(
-    page_title="Magnetic Units Converter - HBTU", page_icon="🧲", layout="wide"
+
+def inject_custom_css():
+    """Injects a modern dark quantum-physics theme into Streamlit."""
+    css = """
+    <style>
+    /* Global Background & Font */
+    .stApp {
+        background-color: #0d1117;
+        color: #c9d1d9;
+        font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #161b22 !important;
+        border-right: 1px solid #30363d;
+    }
+
+    /* Header & Titles */
+    h1, h2, h3, h4, h5, h6 {
+        color: #58a6ff !important;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    /* Custom Glassmorphism Cards */
+    .physics-card {
+        background: rgba(22, 27, 34, 0.85);
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(8px);
+    }
+    
+    .physics-card-accent {
+        background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(165, 214, 255, 0.05));
+        border: 1px solid #58a6ff;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    /* Metric Visual Displays */
+    .metric-title {
+        font-size: 0.9rem;
+        color: #8b949e;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .metric-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #79c0ff;
+    }
+    .metric-unit {
+        font-size: 1rem;
+        color: #a5d6ff;
+    }
+
+    /* Formula & Step Display Box */
+    .step-box {
+        background-color: #010409;
+        border-left: 4px solid #a5d6ff;
+        padding: 15px;
+        border-radius: 4px;
+        font-family: 'Fira Code', 'Courier New', monospace;
+        color: #e6edf3;
+        margin: 10px 0;
+    }
+
+    /* Animated Custom Buttons */
+    .stButton > button {
+        background: linear-gradient(180deg, #21262d, #161b22);
+        color: #58a6ff;
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover {
+        background: #58a6ff;
+        color: #0d1117;
+        border-color: #58a6ff;
+        box-shadow: 0 0 12px rgba(88, 166, 255, 0.6);
+        transform: translateY(-2px);
+    }
+
+    /* Download Buttons */
+    .stDownloadButton > button {
+        background: linear-gradient(180deg, #238636, #2ea043);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+    .stDownloadButton > button:hover {
+        background: #3fb950;
+        box-shadow: 0 0 12px rgba(63, 185, 80, 0.5);
+    }
+
+    /* Footer styling */
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #161b22;
+        color: #8b949e;
+        text-align: center;
+        padding: 8px;
+        font-size: 0.85rem;
+        border-top: 1px solid #30363d;
+        z-index: 999;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
-# Header Section
-st.title("🧲 Spintronics: SI ↔ CGS Magnetic Unit Converter")
-st.markdown("### Department of Physics | HBTU Kanpur (Course: NPH-605)")
-st.markdown("---")
 
-# Conversion Data based on Assignment Table
-# Factor definition: 1 SI Unit = (Factor) * CGS Unit
-quantities = {
-    "Magnetic induction (B)": {
-        "symbol": "B",
-        "si_unit": "Tesla (T)",
-        "cgs_unit": "Gauss (G)",
-        "factor": 1e4,
-        "conversion_str": "1 T = 10⁴ G",
-    },
-    "Magnetic field (H)": {
-        "symbol": "H",
-        "si_unit": "A m⁻¹",
-        "cgs_unit": "Oersted (Oe)",
-        "factor": 4 * math.pi * 1e-3,
-        "conversion_str": "1 A m⁻¹ = 4π × 10⁻³ Oe",
-    },
-    "Magnetization (M)": {
-        "symbol": "M",
-        "si_unit": "A m⁻¹",
-        "cgs_unit": "emu cm⁻³",
-        "factor": 1e-3,
-        "conversion_str": "1 A m⁻¹ = 10⁻³ emu cm⁻³",
-    },
-    "Magnetic polarization (J)": {
-        "symbol": "J",
-        "si_unit": "Tesla (T)",
-        "cgs_unit": "G (or emu cm⁻³)",
-        "factor": 1e4 / (4 * math.pi),
-        "conversion_str": "1 T = 10⁴/(4π) emu cm⁻³",
-    },
-    "Magnetic moment (m)": {
-        "symbol": "m",
-        "si_unit": "A m²",
-        "cgs_unit": "emu (= G cm³)",
-        "factor": 1e3,
-        "conversion_str": "1 A m² = 10³ emu",
-    },
-    "Magnetic moment per unit mass (σ)": {
-        "symbol": "σ",
-        "si_unit": "A m² kg⁻¹",
-        "cgs_unit": "emu g⁻¹",
-        "factor": 1.0,
-        "conversion_str": "1 A m² kg⁻¹ = 1 emu g⁻¹",
-    },
-    "Volume magnetic susceptibility (χ)": {
-        "symbol": "χ",
-        "si_unit": "dimensionless",
-        "cgs_unit": "dimensionless",
-        "factor": 1 / (4 * math.pi),
-        "conversion_str": "1 (SI) = 1/(4π) (CGS)",
-    },
-    "Mass magnetic susceptibility (χ_g)": {
-        "symbol": "χ_g",
-        "si_unit": "m³ kg⁻¹",
-        "cgs_unit": "emu Oe⁻¹ g⁻¹",
-        "factor": 1e3 / (4 * math.pi),
-        "conversion_str": "1 m³ kg⁻¹ = 10³/(4π) emu Oe⁻¹ g⁻¹",
-    },
-    "Molar magnetic susceptibility (χ_m)": {
-        "symbol": "χ_m",
-        "si_unit": "m³ mol⁻¹",
-        "cgs_unit": "emu Oe⁻¹ mol⁻¹",
-        "factor": 1e6 / (4 * math.pi),
-        "conversion_str": "1 m³ mol⁻¹ = 10⁶/(4π) emu Oe⁻¹ mol⁻¹",
-    },
-    "Magnetic permeability (μ)": {
-        "symbol": "μ",
-        "si_unit": "H m⁻¹",
-        "cgs_unit": "G Oe⁻¹",
-        "factor": 1e7 / (4 * math.pi),
-        "conversion_str": "1 H m⁻¹ = 10⁷/(4π) G Oe⁻¹",
-    },
-    "Magnetic flux (Φ)": {
-        "symbol": "Φ",
-        "si_unit": "Weber (Wb)",
-        "cgs_unit": "Maxwell (Mx)",
-        "factor": 1e8,
-        "conversion_str": "1 Wb = 10⁸ Mx",
-    },
-    "Magnetic scalar potential / Magnetomotive force (ϕ)": {
-        "symbol": "ϕ",
-        "si_unit": "Ampere (A)",
-        "cgs_unit": "gilbert",
-        "factor": 0.4 * math.pi,
-        "conversion_str": "1 A = 4π/10 gilbert",
-    },
-    "Magnetic vector potential (A)": {
-        "symbol": "A",
-        "si_unit": "Wb m⁻¹",
-        "cgs_unit": "emu (= G cm)",
-        "factor": 1e6,
-        "conversion_str": "1 Wb m⁻¹ = 10⁶ emu",
-    },
-    "Magnetic pole strength (p)": {
-        "symbol": "p",
-        "si_unit": "A m",
-        "cgs_unit": "emu (= G cm²)",
-        "factor": 1e3,
-        "conversion_str": "1 A m = 10³ emu",
-    },
-    "Demagnetizing factor (N)": {
-        "symbol": "N",
-        "si_unit": "dimensionless",
-        "cgs_unit": "dimensionless",
-        "factor": 4 * math.pi,
-        "conversion_str": "1 (SI) = 4π (CGS)",
-    },
-    "Magnetostriction constant (λ)": {
-        "symbol": "λ",
-        "si_unit": "dimensionless",
-        "cgs_unit": "dimensionless",
-        "factor": 1.0,
-        "conversion_str": "1 (SI) = 1 (CGS)",
-    },
-    "Anisotropy constant (K)": {
-        "symbol": "K",
-        "si_unit": "J m⁻³",
-        "cgs_unit": "erg cm⁻³",
-        "factor": 10.0,
-        "conversion_str": "1 J m⁻³ = 10 erg cm⁻³",
-    },
-    "Magnetostatic energy (Em)": {
-        "symbol": "Em",
-        "si_unit": "J m⁻³",
-        "cgs_unit": "erg cm⁻³",
-        "factor": 10.0,
-        "conversion_str": "1 J m⁻³ = 10 erg cm⁻³",
-    },
-    "Energy product ((BH)max)": {
-        "symbol": "(BH)max",
-        "si_unit": "J m⁻³",
-        "cgs_unit": "erg cm⁻³",
-        "factor": 10.0,
-        "conversion_str": "1 J m⁻³ = 10 erg cm⁻³",
-    },
-}
+class ConversionPDF(FPDF):
+    """Custom FPDF generator for Physics Conversion Reports."""
 
-# Sidebar for App Settings
-st.sidebar.header("⚙️ Converter Settings")
-selected_q = st.sidebar.selectbox(
-    "Choose Magnetic Quantity:", list(quantities.keys())
-)
-direction = st.sidebar.radio("Conversion Direction:", ["SI to CGS", "CGS to SI"])
+    def header(self):
+        self.set_font("Helvetica", "B", 16)
+        self.set_text_color(88, 166, 255)
+        self.cell(0, 10, "SU_PHYHBTU - Physics Unit Conversion Report", border=False, new_x="LMARGIN", new_y="NEXT", align="C")
+        self.set_font("Helvetica", "I", 9)
+        self.set_text_color(150, 150, 150)
+        self.cell(0, 5, "Electromagnetism Unit Converter for MSc Physics", border=False, new_x="LMARGIN", new_y="NEXT", align="C")
+        self.ln(5)
 
-data = quantities[selected_q]
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("Helvetica", "I", 8)
+        self.set_text_color(128, 128, 128)
+        self.cell(0, 10, f"Page {self.page_no()} | Generated by SU_PHYHBTU", align="C")
 
-# Main Interface
-col1, col2 = st.columns([2, 1])
 
-with col1:
-    st.subheader(f"Convert: {selected_q}")
-    st.info(
-        f"**Symbol:** `{data['symbol']}` | **Standard Relation:** `{data['conversion_str']}`"
-    )
+def generate_pdf(quantity, val_in, unit_in, val_out, unit_out, formula, steps, desc):
+    """Generates a PDF byte string containing full conversion details."""
+    pdf = ConversionPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
 
-    if direction == "SI to CGS":
-        input_label = f"Enter Value in SI Unit ({data['si_unit']})"
-        val = st.number_input(
-            input_label, value=1.0, format="%.6e", key="input_val"
-        )
-        converted = val * data["factor"]
-        st.success(
-            f"**Result:** `{val:g}` {data['si_unit']} = **`{converted:.6e}` {data['cgs_unit']}**"
-        )
-    else:
-        input_label = f"Enter Value in CGS Unit ({data['cgs_unit']})"
-        val = st.number_input(
-            input_label, value=1.0, format="%.6e", key="input_val"
-        )
-        converted = val / data["factor"]
-        st.success(
-            f"**Result:** `{val:g}` {data['cgs_unit']} = **`{converted:.6e}` {data['si_unit']}**"
-        )
+    # Content
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_text_color(40, 40, 40)
+    pdf.cell(0, 8, f"Quantity: {quantity}", new_x="LMARGIN", new_y="NEXT")
 
-with col2:
-    st.markdown("### ℹ️ Units Summary")
-    st.write(f"**SI Unit:** {data['si_unit']}")
-    st.write(f"**CGS Unit:** {data['cgs_unit']}")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, f"Description: {desc}", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(3)
 
-st.markdown("---")
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 7, "Conversion Summary:", new_x="LMARGIN", new_y="NEXT")
 
-# Full Reference Table Display
-st.subheader("📋 Complete Magnetic Units Reference Table")
-table_data = []
-for k, v in quantities.items():
-    table_data.append(
-        {
-            "Magnetic Quantity": k,
-            "Symbol": v["symbol"],
-            "SI Unit": v["si_unit"],
-            "CGS Unit": v["cgs_unit"],
-            "Conversion Factor": v["conversion_str"],
-        }
-    )
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, f"  - Input Value: {val_in:.6e} {unit_in}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, f"  - Converted Result: {val_out:.6e} {unit_out}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, f"  - Formula Applied: {formula}", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(4)
 
-df = pd.DataFrame(table_data)
-st.dataframe(df, use_container_width=True)
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 7, "Step-by-Step Mathematical Calculation:", new_x="LMARGIN", new_y="NEXT")
+
+    pdf.set_font("Courier", "", 9)
+    for line in steps.split("\n"):
+        pdf.cell(0, 5, f"  {line}", new_x="LMARGIN", new_y="NEXT")
+
+    # Output to bytes
+    pdf_bytes = pdf.output()
+    return bytes(pdf_bytes)
+
+
+def generate_csv(quantity, val_in, unit_in, val_out, unit_out, formula):
+    """Generates CSV dataset for download."""
+    data = {
+        "Quantity": [quantity],
+        "Input Value": [val_in],
+        "Input Unit": [unit_in],
+        "Converted Value": [val_out],
+        "Output Unit": [unit_out],
+        "Formula Used": [formula],
+    }
+    df = pd.DataFrame(data)
+    return df.to_csv(index=False).encode("utf-8")
