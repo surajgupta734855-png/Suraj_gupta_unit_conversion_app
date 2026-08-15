@@ -1,93 +1,101 @@
-# AI Prompt
+import streamlit as st
+import math
 
-Read the attached assignment PDF carefully and build the project exactly according to the instructions given in the document. Do not skip any requirement.
+st.set_page_config(page_title="SI ↔ CGS Converter", page_icon="🧲", layout="centered")
 
-## Objective
+st.title("🧲 SI ↔ CGS Magnetic Unit Converter")
+st.write("Convert Magnetic Quantities between SI and CGS Units")
 
-Develop a fully functional Android Mobile Application that converts SI units into CGS units and CGS units into SI units for all magnetic quantities mentioned in the assignment.
+quantity = st.selectbox(
+    "Select Magnetic Quantity",
+    [
+        "Magnetic Flux",
+        "Magnetic Flux Density",
+        "Magnetic Field Strength",
+        "Magnetization",
+        "Magnetic Moment",
+        "Magnetic Susceptibility"
+    ]
+)
 
-## Follow the Assignment Strictly
+direction = st.radio(
+    "Conversion",
+    ["SI → CGS", "CGS → SI"]
+)
 
-Use the attached PDF as the primary source of requirements. Every feature, unit, conversion, and instruction must match the assignment exactly. Do not add unnecessary features unless they improve the UI without changing the assignment requirements.
+value = st.number_input("Enter Value", value=0.0, format="%.6f")
 
-## Technology
+result = None
+formula = ""
+unit = ""
 
-Use Flutter (Dart) for Android development.
+if st.button("Convert"):
 
-Alternative:
-If Flutter is not available, use Streamlit (Python) with a mobile-friendly interface.
+    if quantity == "Magnetic Flux":
+        if direction == "SI → CGS":
+            result = value * 1e8
+            unit = "Maxwell (Mx)"
+            formula = "1 Wb = 10⁸ Mx"
+        else:
+            result = value / 1e8
+            unit = "Weber (Wb)"
+            formula = "1 Mx = 10⁻⁸ Wb"
 
-## Application Requirements
+    elif quantity == "Magnetic Flux Density":
+        if direction == "SI → CGS":
+            result = value * 10000
+            unit = "Gauss (G)"
+            formula = "1 Tesla = 10⁴ Gauss"
+        else:
+            result = value / 10000
+            unit = "Tesla (T)"
+            formula = "1 Gauss = 10⁻⁴ Tesla"
 
-* Beautiful Material 3 UI
-* Responsive Design
-* Attractive Home Screen
-* Splash Screen
-* About Screen
-* Offline Working
-* Fast Conversion
-* Error Handling
-* Input Validation
-* Copy Result Button
-* Reset Button
-* Clear Button
-* Dark Mode
-* Light Mode
+    elif quantity == "Magnetic Field Strength":
+        if direction == "SI → CGS":
+            result = value / 79.57747
+            unit = "Oersted (Oe)"
+            formula = "Oe = A/m ÷ 79.57747"
+        else:
+            result = value * 79.57747
+            unit = "A/m"
+            formula = "A/m = Oe × 79.57747"
 
-## Main Screen
+    elif quantity == "Magnetization":
+        if direction == "SI → CGS":
+            result = value / 1000
+            unit = "emu/cm³"
+            formula = "1 A/m = 0.001 emu/cm³"
+        else:
+            result = value * 1000
+            unit = "A/m"
+            formula = "1 emu/cm³ = 1000 A/m"
 
-The application should contain:
+    elif quantity == "Magnetic Moment":
+        if direction == "SI → CGS":
+            result = value * 1000
+            unit = "emu"
+            formula = "1 A·m² = 1000 emu"
+        else:
+            result = value / 1000
+            unit = "A·m²"
+            formula = "1 emu = 0.001 A·m²"
 
-* App Title
-* Dropdown to Select Magnetic Quantity
-* Dropdown to Select Conversion Type
-* Input Value Field
-* Convert Button
-* Reset Button
-* Result Card
-* Formula Used
-* SI Unit
-* CGS Unit
+    elif quantity == "Magnetic Susceptibility":
+        if direction == "SI → CGS":
+            result = value / (4 * math.pi)
+            unit = "CGS"
+            formula = "χ(CGS) = χ(SI) / (4π)"
+        else:
+            result = value * (4 * math.pi)
+            unit = "SI"
+            formula = "χ(SI) = 4π × χ(CGS)"
 
-## Conversion Direction
+    st.success("Conversion Completed")
 
-Support both:
+    st.metric("Converted Value", f"{result:.6f} {unit}")
 
-* SI → CGS
-* CGS → SI
+    st.info(f"Formula Used:\n\n{formula}")
 
-## Output
-
-Display:
-
-* Entered Value
-* Converted Value
-* Formula Used
-* Unit Name
-* Conversion Factor
-
-## Code Quality
-
-Generate:
-
-* Complete Flutter Project
-* Well-commented Code
-* Modular Folder Structure
-* Separate Conversion Logic
-* Responsive UI
-* No Compilation Errors
-* Ready to Run in Android Studio and VS Code
-
-## Final Deliverables
-
-Provide:
-
-1. Complete Source Code
-2. pubspec.yaml
-3. All Dart Files
-4. Assets Folder
-5. README.md
-6. Installation Steps
-7. APK Build Instructions
-
-The generated application must be fully functional and satisfy all the requirements mentioned in the attached assignment PDF.
+st.markdown("---")
+st.caption("Developed for SI ↔ CGS Magnetic Unit Conversion")
